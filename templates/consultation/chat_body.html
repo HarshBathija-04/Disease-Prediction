@@ -1,0 +1,30 @@
+﻿{% load static %}
+
+{% for obj in chat %}
+  {% if obj.sender == request.user %}
+    <div class="chat-message sent">
+      <div class="message-bubble sent-bubble">
+        {{ obj.message }}
+      </div>
+      <div class="message-meta sent-meta">
+        <span class="message-sender">You</span>
+        <span class="message-time">{{ obj.created }}</span>
+      </div>
+    </div>
+  {% else %}
+    <div class="chat-message received">
+      <div class="message-bubble received-bubble">
+        {{ obj.message }}
+      </div>
+      <div class="message-meta received-meta">
+        <span class="message-sender">{{ obj.sender }}</span>
+        <span class="message-time">{{ obj.created }}</span>
+      </div>
+    </div>
+  {% endif %}
+{% empty %}
+  <div class="empty-chat">
+    <i class="fas fa-comments" style="font-size:2.5rem;color:#ddd;margin-bottom:1rem;"></i>
+    <p style="color:var(--text-muted);font-size:0.9rem;">No messages yet. Start the conversation!</p>
+  </div>
+{% endfor %}

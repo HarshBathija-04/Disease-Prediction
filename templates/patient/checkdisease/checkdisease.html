@@ -1,0 +1,645 @@
+
+
+{% extends "basic.html" %}
+{% load static %}
+
+ 
+    {% block head %}
+
+<style>
+  /* ===== CHECK DISEASE PAGE ===== */
+  .checkdisease-page {
+    min-height: calc(100vh - 70px);
+    background: linear-gradient(180deg, #f0f4f8 0%, #e8f0fe 100%);
+    padding: 2.5rem 1.5rem;
+  }
+
+  .checkdisease-container {
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  .page-heading {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 800;
+    font-size: 2rem;
+    color: var(--text-dark);
+    text-align: center;
+    margin-bottom: 2rem;
+    line-height: 1.3;
+  }
+
+  /* ===== SYMPTOM SELECTOR ===== */
+  .symptom-selector {
+    display: flex;
+    gap: 0.8rem;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+  }
+
+  .btn-add-symptoms {
+    background: linear-gradient(135deg, var(--primary-teal), var(--accent-green));
+    color: white;
+    border: none;
+    padding: 0.65rem 1.5rem;
+    border-radius: 25px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(26, 138, 125, 0.3);
+  }
+
+  .btn-add-symptoms:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 25px rgba(26, 138, 125, 0.4);
+  }
+
+  .search-input {
+    flex: 1;
+    max-width: 400px;
+    padding: 0.65rem 1.2rem;
+    border: 2px solid #e0e6ed;
+    border-radius: 25px;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+    outline: none;
+  }
+
+  .search-input:focus {
+    border-color: var(--primary-teal);
+    box-shadow: 0 0 0 3px rgba(26, 138, 125, 0.1);
+  }
+
+  /* ===== DROPDOWN ===== */
+  .symptoms-dropdown {
+    display: none;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.1);
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    border: 1px solid #e8ecf1;
+    animation: fadeIn 0.3s ease;
+  }
+
+  .symptoms-dropdown.show {
+    display: block;
+  }
+
+  .symptoms-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    justify-content: center;
+  }
+
+  .symptom-pill {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    background: #f0f4f8;
+    border: 1.5px solid #dbe4ed;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    color: var(--text-dark);
+    cursor: pointer;
+    transition: all 0.25s ease;
+    font-weight: 500;
+  }
+
+  .symptom-pill:hover {
+    background: rgba(26, 138, 125, 0.1);
+    border-color: var(--primary-teal);
+    color: var(--primary-teal);
+    transform: translateY(-2px);
+  }
+
+  /* ===== SYMPTOMS BOX ===== */
+  .symptoms-box {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+    border: 1px solid #e8ecf1;
+    overflow: hidden;
+    margin-bottom: 2rem;
+  }
+
+  .symptoms-box-header {
+    background: #f8fafc;
+    padding: 1rem 1.5rem;
+    font-family: 'Outfit', sans-serif;
+    font-weight: 700;
+    font-size: 1.15rem;
+    color: var(--text-dark);
+    border-bottom: 1px solid #e8ecf1;
+  }
+
+  .symptoms-box-body {
+    padding: 1.5rem;
+    min-height: 100px;
+  }
+
+  .selected-symptom {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.45rem 1rem;
+    background: #f0f8f6;
+    border: 1.5px solid #c8e6df;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    color: var(--text-dark);
+    margin: 0.3rem;
+    font-weight: 500;
+  }
+
+  .selected-symptom .remove-sym {
+    cursor: pointer;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    margin-left: 0.2rem;
+    transition: color 0.2s;
+  }
+
+  .selected-symptom .remove-sym:hover {
+    color: #e74c3c;
+  }
+
+  .symptoms-box-footer {
+    padding: 1rem 1.5rem;
+    border-top: 1px solid #e8ecf1;
+    display: flex;
+    gap: 0.8rem;
+    flex-wrap: wrap;
+  }
+
+  .btn-predict {
+    background: linear-gradient(135deg, var(--primary-teal), var(--accent-green));
+    color: white;
+    border: none;
+    padding: 0.6rem 1.8rem;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(26, 138, 125, 0.3);
+  }
+
+  .btn-predict:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 25px rgba(26, 138, 125, 0.4);
+  }
+
+  .btn-add-more {
+    background: white;
+    color: var(--text-dark);
+    border: 2px solid #dbe4ed;
+    padding: 0.6rem 1.8rem;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .btn-add-more:hover {
+    border-color: var(--primary-teal);
+    color: var(--primary-teal);
+  }
+
+  /* ===== RESULTS SECTION ===== */
+  .results-section {
+    display: none;
+    animation: fadeInUp 0.6s ease;
+  }
+
+  .results-section.show-results {
+    display: block;
+  }
+
+  .symptoms-summary {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+    border: 1px solid #e8ecf1;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .symptoms-summary h4 {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 700;
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+    color: var(--text-dark);
+  }
+
+  .symptoms-summary .symptom-item {
+    padding: 0.6rem 1rem;
+    border-bottom: 1px solid #f0f4f8;
+    font-size: 0.9rem;
+    color: var(--text-dark);
+  }
+
+  .symptoms-summary .symptom-item:last-child {
+    border-bottom: none;
+  }
+
+  /* ===== PREDICTION CARD ===== */
+  .prediction-card {
+    background: linear-gradient(135deg, rgba(26, 138, 125, 0.05), rgba(52, 152, 219, 0.08));
+    border: 1.5px solid rgba(26, 138, 125, 0.15);
+    border-radius: 16px;
+    padding: 2rem;
+    margin-bottom: 1.5rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .prediction-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 5px;
+    height: 100%;
+    background: linear-gradient(180deg, var(--primary-teal), var(--accent-green));
+    border-radius: 5px 0 0 5px;
+  }
+
+  .prediction-card h3 {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 700;
+    font-size: 1.3rem;
+    text-align: center;
+    margin-bottom: 1.2rem;
+    color: var(--text-dark);
+  }
+
+  .prediction-info-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.8rem;
+    font-size: 0.95rem;
+  }
+
+  .prediction-info-row strong {
+    color: var(--text-dark);
+  }
+
+  .disease-name {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 800;
+    font-size: 1.8rem;
+    color: var(--primary-teal);
+    margin-bottom: 1rem;
+  }
+
+  .confidence-bar-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 0.5rem;
+  }
+
+  .confidence-bar {
+    flex: 1;
+    height: 10px;
+    background: #e0e6ed;
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  .confidence-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary-teal), var(--accent-green));
+    border-radius: 10px;
+    transition: width 1s ease;
+  }
+
+  .confidence-value {
+    font-weight: 700;
+    color: var(--primary-teal);
+    font-size: 1.1rem;
+    min-width: 50px;
+    text-align: right;
+  }
+
+  .info-link {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 1rem;
+    padding: 0.8rem 1rem;
+    background: rgba(26, 138, 125, 0.08);
+    border-radius: 10px;
+    font-size: 0.9rem;
+  }
+
+  .info-link i {
+    color: var(--primary-teal);
+  }
+
+  .info-link a {
+    color: var(--primary-blue);
+    font-weight: 600;
+    text-decoration: underline;
+  }
+
+  /* ===== DISCLAIMER ===== */
+  .disclaimer {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    line-height: 1.6;
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+  }
+
+  /* ===== CONSULT BUTTON ===== */
+  .consult-btn-wrapper {
+    text-align: center;
+  }
+
+  .btn-consult {
+    background: linear-gradient(135deg, var(--primary-teal), #3498db);
+    color: white;
+    border: none;
+    padding: 1rem 3rem;
+    border-radius: 14px;
+    font-weight: 700;
+    font-size: 1.15rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 6px 25px rgba(26, 138, 125, 0.35);
+    width: 100%;
+    max-width: 450px;
+    justify-content: center;
+  }
+
+  .btn-consult:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 40px rgba(26, 138, 125, 0.45);
+    color: white;
+  }
+
+  /* ===== ANIMATIONS ===== */
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+</style>
+
+<script>
+
+  function Functionshow() {
+    document.getElementById("searchbar").value = '';
+    document.getElementById("myDropdown").classList.toggle("show");
+    search_symptoms();
+  }
+
+  window.onclick = function(event) {
+    if (!event.target.matches('.btn-add-symptoms') && 
+        !event.target.matches('.search-input') && 
+        !event.target.matches('.symptom-pill') &&
+        !event.target.closest('.btn-add-symptoms') &&
+        !event.target.closest('.symptoms-dropdown')) {
+      var dropdowns = document.getElementsByClassName("symptoms-dropdown");
+      for (var i = 0; i < dropdowns.length; i++) {
+        var openDropdown = dropdowns[i];
+        if (openDropdown.classList.contains('show')) {
+          openDropdown.classList.remove('show');
+        }
+      }
+    }
+  }
+
+  function Functionsymptoms(name) {
+    var sympbox = document.getElementById("sympbox");
+    
+    // Check if already added
+    var existing = sympbox.querySelectorAll('.selected-symptom');
+    for (var i = 0; i < existing.length; i++) {
+      if (existing[i].querySelector('textarea').value === name) return;
+    }
+
+    var wrapper = document.createElement("DIV");
+    wrapper.className = "selected-symptom";
+    
+    var newItem = document.createElement("TEXTAREA");
+    newItem.innerText = name;
+    newItem.setAttribute("id", "symptoms");
+    newItem.setAttribute("class", "symptoms");
+    newItem.style.display = "none";
+    
+    var label = document.createElement("SPAN");
+    label.innerText = name;
+    
+    var removeBtn = document.createElement("SPAN");
+    removeBtn.className = "remove-sym";
+    removeBtn.innerHTML = "&times;";
+    removeBtn.onclick = function() { wrapper.remove(); };
+    
+    wrapper.appendChild(newItem);
+    wrapper.appendChild(label);
+    wrapper.appendChild(removeBtn);
+    sympbox.appendChild(wrapper);
+  }
+
+  function search_symptoms() {
+    let input = document.getElementById('searchbar').value;
+    input = input.toLowerCase();
+    let x = document.getElementsByClassName('symptom-pill');
+    for (var i = 0; i < x.length; i++) {
+      if (!x[i].innerHTML.toLowerCase().includes(input)) {
+        x[i].style.display = "none";
+      } else {
+        x[i].style.display = "inline-block";
+      }
+    }
+  }
+
+$(document).ready(function() {
+  $("#predict").click(function() {
+    event.preventDefault();
+    var symptoms = document.getElementsByClassName("symptoms");
+    var noofsym = symptoms.length;
+    var symlist = [];
+
+    if (noofsym == 0) {
+      alert("Please add some symptoms");
+    } else {
+      for (var i = 0; i < symptoms.length; i++) {
+        symlist[i] = symptoms[i].value;
+      }
+
+      $("#resultdiv").addClass("show-results");
+      $('html,body').animate({
+        scrollTop: $("#resultdiv").offset().top - 100
+      }, 'slow');
+
+      $.ajax({
+        url: 'checkdisease',
+        type: "POST",
+        data: {
+          "noofsym": noofsym,
+          "symptoms": symlist,
+          csrfmiddlewaretoken: $('input[name=csrfmiddlewaretoken]').val()
+        },
+        dataType: 'json',
+        success: function(data) {
+          document.getElementById('diseasefield').innerText = data["predicteddisease"];
+          document.getElementById('percentage-value').innerText = data["confidencescore"] + "%";
+          var percent = data["confidencescore"];
+          var disease = data["predicteddisease"];
+
+          document.getElementById('confidence-fill').style.width = percent + "%";
+          document.getElementById('diseasesearch').innerText = data["predicteddisease"];
+          $("#href").attr("href", "https://www.google.com/search?q=" + disease);
+          document.getElementById('consultdoctor').innerText = data["consultdoctor"];
+
+          // Update symptoms summary
+          var summaryBox = document.getElementById('symptoms-summary-list');
+          summaryBox.innerHTML = '';
+          for (var i = 0; i < symlist.length; i++) {
+            var item = document.createElement('div');
+            item.className = 'symptom-item';
+            item.innerText = symlist[i].replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+            summaryBox.appendChild(item);
+          }
+        }
+      });
+    }
+  });
+});
+
+</script>
+
+
+{% endblock %}
+
+
+{% block body %}
+
+<div class="checkdisease-page">
+  <div class="checkdisease-container">
+
+    <h1 class="page-heading animate-fade-in-up">
+      Identify possible conditions and treatment<br>related to your symptoms
+    </h1>
+
+    <!-- Symptom Selector -->
+    <div class="symptom-selector">
+      <button onclick="Functionshow()" class="btn-add-symptoms">
+        Add Symptoms <i class="fas fa-chevron-down ml-1"></i>
+      </button>
+      <input id="searchbar" class="search-input" onkeyup="search_symptoms()" type="text"
+        placeholder="Search for symptoms...">
+    </div>
+
+    <!-- Symptoms Dropdown -->
+    <div id="myDropdown" class="symptoms-dropdown">
+      <div class="symptoms-grid">
+        {% for i in list2 %}
+        <span class="symptom-pill" onclick="Functionsymptoms(this.textContent)">{{i}}</span>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Symptoms Box -->
+    <div class="symptoms-box">
+      {% csrf_token %}
+      <div class="symptoms-box-header">Symptoms List</div>
+      <div class="symptoms-box-body" id="sympbox"></div>
+      <div class="symptoms-box-footer">
+        <button id="predict" class="btn-predict">
+          <i class="fas fa-search-plus mr-1"></i> Proceed to Analysis
+        </button>
+        <button onclick="Functionshow()" class="btn-add-more">
+          Add More Symptoms
+        </button>
+      </div>
+    </div>
+
+    <!-- Results Section -->
+    <div id="resultdiv" class="results-section">
+
+      <!-- Symptoms Summary -->
+      <div class="symptoms-summary">
+        <h4><i class="fas fa-list-ul mr-2" style="color:var(--primary-teal);"></i>Symptoms Summary</h4>
+        <div id="symptoms-summary-list">
+          <!-- Filled dynamically -->
+        </div>
+      </div>
+
+      <!-- Prediction Button Visual -->
+      <div class="text-center mb-4">
+        <div class="btn-predict" style="cursor:default;display:inline-flex;align-items:center;gap:0.5rem;padding:0.8rem 2.5rem;">
+          <i class="fas fa-microscope"></i> Predict
+        </div>
+      </div>
+
+      <!-- Prediction Card -->
+      <div class="prediction-card">
+        <h3>Prediction Results</h3>
+        <div class="prediction-info-row">
+          <span>Patient Name: <strong>{{ user.patient.name }}</strong></span>
+          <span>Age: <strong>{{ user.patient.age }}</strong></span>
+        </div>
+        <div style="margin-bottom:0.3rem;font-size:0.9rem;color:var(--text-muted);">Predicted Disease:</div>
+        <div class="disease-name" id="diseasefield"></div>
+
+        <div style="font-size:0.9rem;color:var(--text-muted);">Confidence Score</div>
+        <div class="confidence-bar-wrapper">
+          <div class="confidence-bar">
+            <div id="confidence-fill" class="confidence-fill" style="width:0%"></div>
+          </div>
+          <span class="confidence-value" id="percentage-value">0%</span>
+        </div>
+
+        <div class="info-link">
+          <i class="fas fa-info-circle"></i>
+          <span>
+            <a id="href" href="#" target="_blank" rel="noopener noreferrer">Click here</a>
+            to know more about <strong id="diseasesearch"></strong>
+          </span>
+        </div>
+      </div>
+
+      <!-- Disclaimer -->
+      <div class="disclaimer">
+        <strong>Disclaimer:</strong> This tool does not provide medical advice. It is intended for informational purposes only.
+        It is not a substitute for professional medical advice, diagnosis or treatment.
+      </div>
+
+      <!-- Consult Button -->
+      <div class="consult-btn-wrapper">
+        <form action="consult_a_doctor" method="GET">
+          {% csrf_token %}
+          <button type="submit" class="btn-consult">
+            <i class="fas fa-user-md mr-2"></i>
+            Consult a <span id="consultdoctor"></span> doctor
+          </button>
+        </form>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+{% endblock %}

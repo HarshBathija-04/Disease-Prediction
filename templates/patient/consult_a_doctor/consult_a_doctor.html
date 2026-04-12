@@ -1,0 +1,155 @@
+{% extends "basic.html" %}
+{% load static %}
+
+{% block head %}
+<style>
+  .doctors-page {
+    min-height: calc(100vh - 70px);
+    background: linear-gradient(135deg, #f0f4f8 0%, #e8f0fe 100%);
+    padding: 2.5rem;
+  }
+
+  .doctors-container {
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .page-title {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 700;
+    font-size: 1.8rem;
+    color: var(--text-dark);
+    text-align: center;
+    margin-bottom: 2rem;
+  }
+
+  .page-title i {
+    color: var(--primary-teal);
+    margin-right: 0.5rem;
+  }
+
+  .table-card {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+    overflow: hidden;
+    border: 1px solid #e8ecf1;
+  }
+
+  .modern-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0;
+  }
+
+  .modern-table thead {
+    background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
+  }
+
+  .modern-table thead th {
+    color: white;
+    font-weight: 600;
+    font-size: 0.85rem;
+    padding: 1rem 1.2rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border: none;
+  }
+
+  .modern-table tbody tr {
+    border-bottom: 1px solid #f0f4f8;
+    transition: background 0.2s;
+  }
+
+  .modern-table tbody tr:hover {
+    background: #f8fafe;
+  }
+
+  .modern-table tbody td {
+    padding: 0.85rem 1.2rem;
+    font-size: 0.9rem;
+    color: var(--text-dark);
+    vertical-align: middle;
+    border: none;
+  }
+
+  .modern-table .btn-table {
+    background: var(--primary-blue);
+    color: white;
+    border: none;
+    padding: 0.4rem 1rem;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .modern-table .btn-table:hover {
+    background: var(--primary-teal);
+    transform: translateY(-1px);
+  }
+
+  .modern-table .btn-consult {
+    background: linear-gradient(135deg, var(--primary-teal), var(--accent-green));
+  }
+
+  .rating-stars {
+    color: #f39c12;
+    font-size: 0.85rem;
+  }
+</style>
+{% endblock %}
+
+{% block body %}
+
+<div class="doctors-page">
+  <div class="doctors-container">
+    <h2 class="page-title"><i class="fas fa-user-md"></i> Consult a Doctor</h2>
+
+    <div class="table-card">
+      <table class="modern-table">
+        <thead>
+          <tr>
+            <th>Doctor Name</th>
+            <th>Specialization</th>
+            <th>Email</th>
+            <th>Rating</th>
+            <th>View Profile</th>
+            <th>Consult</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for i in dobj %}
+          <tr>
+            <td><strong>Dr. {{i.name}}</strong></td>
+            <td>{{i.specialization}}</td>
+            <td>{{i.user.email}}</td>
+            <td>
+              <span class="rating-stars">
+                {{i.rating}}/5 <i class="fas fa-star"></i>
+              </span>
+            </td>
+            <td>
+              <form action="{% url 'dviewprofile' i.user.username %}" method="GET">
+                {% csrf_token %}
+                <button type="submit" class="btn-table">View Profile</button>
+              </form>
+            </td>
+            <td>
+              <form action="{% url 'make_consultation' i.user.username %}" method="POST">
+                {% csrf_token %}
+                <button type="submit" class="btn-table btn-consult">
+                  <i class="fas fa-comments mr-1"></i> Consult
+                </button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
