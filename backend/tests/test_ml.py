@@ -23,3 +23,8 @@ def test_display_names_and_labels_are_readable():
     assert specialist == "Rheumatologist"
     assert ml.label("skin_rash") == "Skin rash"
     assert ml.label("cold_hands_and_feets") == "Cold hands and feet"
+
+
+def test_conditions_without_a_clear_specialist_go_to_a_general_physician():
+    for disease in ["Dengue", "Malaria", "Diabetes ", "Hypothyroidism", "Varicose veins"]:
+        assert ml.SPECIALIST_BY_DISEASE.get(disease, "General Physician") == "General Physician"

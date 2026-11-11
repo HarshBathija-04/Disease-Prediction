@@ -145,30 +145,23 @@ SYMPTOMS = [
 ]
 SYMPTOM_SET = set(SYMPTOMS)
 
+# The legacy mapping sent several conditions to unrelated specialists (diabetes to a gastroenterologist,
+# dengue to an allergist, hypothyroidism to ENT). Anything without a clear specialist goes to a General
+# Physician; unlisted diseases fall back to General Physician too.
 SPECIALIST_BY_DISEASE = {
     disease: specialist
     for specialist, diseases in {
         "Rheumatologist": ["Osteoarthristis", "Arthritis"],
-        "Cardiologist": ["Heart attack", "Bronchial Asthma", "Hypertension "],
-        "ENT specialist": ["(vertigo) Paroymsal  Positional Vertigo", "Hypothyroidism"],
-        "Neurologist": ["Varicose veins", "Paralysis (brain hemorrhage)", "Migraine", "Cervical spondylosis"],
-        "Allergist/Immunologist": [
-            "Allergy",
-            "Pneumonia",
-            "AIDS",
-            "Common Cold",
-            "Tuberculosis",
-            "Malaria",
-            "Dengue",
-            "Typhoid",
-        ],
-        "Urologist": ["Urinary tract infection", "Dimorphic hemmorhoids(piles)"],
+        "Cardiologist": ["Heart attack", "Hypertension "],
+        "ENT specialist": ["(vertigo) Paroymsal  Positional Vertigo"],
+        "Neurologist": ["Paralysis (brain hemorrhage)", "Migraine", "Cervical spondylosis"],
+        "Allergist/Immunologist": ["Allergy", "Bronchial Asthma", "Drug Reaction"],
+        "Urologist": ["Urinary tract infection"],
         "Dermatologist": ["Acne", "Chicken pox", "Fungal infection", "Psoriasis", "Impetigo"],
         "Gastroenterologist": [
             "Peptic ulcer diseae",
             "GERD",
             "Chronic cholestasis",
-            "Drug Reaction",
             "Gastroenteritis",
             "Hepatitis E",
             "Alcoholic hepatitis",
@@ -177,8 +170,7 @@ SPECIALIST_BY_DISEASE = {
             "Hepatitis B",
             "Hepatitis C",
             "Hepatitis D",
-            "Diabetes ",
-            "Hypoglycemia",
+            "Dimorphic hemmorhoids(piles)",
         ],
     }.items()
     for disease in diseases

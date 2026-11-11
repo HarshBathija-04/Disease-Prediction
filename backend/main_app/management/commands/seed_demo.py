@@ -21,7 +21,7 @@ DOCTORS = [
     ("dr_kapoor", "Neha Kapoor", "Female", "MD (Dermatology)", "Dermatologist", 2014, "New Delhi, Delhi"),
     ("dr_singh", "Arjun Singh", "Male", "MD, DM (Cardiology)", "Cardiologist", 2007, "Jaipur, Rajasthan"),
     ("dr_rao", "Kavya Rao", "Female", "MD (Neurology)", "Neurologist", 2012, "Bengaluru, Karnataka"),
-    ("dr_khan", "Imran Khan", "Male", "MD (Microbiology)", "Allergist/Immunologist", 2010, "Hyderabad, Telangana"),
+    ("dr_khan", "Imran Khan", "Male", "MD (Immunology)", "Allergist/Immunologist", 2010, "Hyderabad, Telangana"),
     ("dr_das", "Priya Das", "Female", "MS (ENT)", "ENT specialist", 2015, "Kolkata, West Bengal"),
     ("dr_joshi", "Vikram Joshi", "Male", "MS (Urology)", "Urologist", 2013, "Pune, Maharashtra"),
     ("dr_nair", "Meera Nair", "Female", "MD (Rheumatology)", "Rheumatologist", 2016, "Kochi, Kerala"),
@@ -58,7 +58,7 @@ VISITS = [
     (
         "demo_patient",
         ["high_fever", "headache", "muscle_pain", "joint_pain", "nausea"],
-        "dr_khan",
+        "dr_mehta",
         2,
         "confirmed",
         None,

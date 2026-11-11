@@ -178,6 +178,7 @@ render.yaml             Render Blueprint
 - The original server-rendered Django templates were replaced by the React SPA. Every user flow from the old UI (patient and doctor sign-up, symptom check, doctor list, consultation, chat, rating, profile, feedback) exists in the new frontend. The admin feedback view is now Django admin.
 - The original code had two parallel model sets (`main_app.patient/doctor/diseaseinfo/consultation/rating_review` and the newer `hospital`/`records`/`appointments`). They were consolidated into the newer set. A consultation is now an `Appointment`, chat messages belong to an appointment, and ratings live on the appointment. Migrations `chats.0003` and `main_app.0008` perform this.
 - The trained model is unchanged. Readable display names fix typos in the training labels (for example "Osteoarthristis"). The original specialist mapping bug, which sent Rheumatology cases to "other", is fixed and covered by a test.
+- The original disease-to-specialist table also sent several conditions to unrelated specialists (diabetes to a gastroenterologist, dengue and malaria to an allergist, hypothyroidism to ENT). Those now route to a General Physician, which is also the fallback for any unmapped disease.
 
 ## Author
 
