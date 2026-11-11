@@ -22,63 +22,16 @@ export default function App() {
         <Route path="register" element={<Register />} />
         <Route path="doctors" element={<Doctors />} />
         <Route path="doctors/:id" element={<DoctorDetail />} />
-        <Route path="app">
-          <Route
-            index
-            element={
-              <RequireAuth>
-                <Dashboard />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="check"
-            element={
-              <RequireAuth role="patient">
-                <SymptomChecker />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="predictions"
-            element={
-              <RequireAuth>
-                <Predictions />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="predictions/:id"
-            element={
-              <RequireAuth>
-                <PredictionDetail />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="appointments"
-            element={
-              <RequireAuth>
-                <Appointments />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="appointments/:id"
-            element={
-              <RequireAuth>
-                <AppointmentDetail />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="profile"
-            element={
-              <RequireAuth>
-                <Profile />
-              </RequireAuth>
-            }
-          />
+        <Route path="app" element={<RequireAuth />}>
+          <Route index element={<Dashboard />} />
+          <Route path="check" element={<RequireAuth role="patient" />}>
+            <Route index element={<SymptomChecker />} />
+          </Route>
+          <Route path="predictions" element={<Predictions />} />
+          <Route path="predictions/:id" element={<PredictionDetail />} />
+          <Route path="appointments" element={<Appointments />} />
+          <Route path="appointments/:id" element={<AppointmentDetail />} />
+          <Route path="profile" element={<Profile />} />
         </Route>
         <Route path="*" element={<NotFound />} />
       </Route>

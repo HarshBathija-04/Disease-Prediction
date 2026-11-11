@@ -3,20 +3,13 @@ import { useState } from "react";
 import { AppointmentRow } from "../components/lists";
 import { ButtonLink, EmptyState, ErrorState, PageHeader, SkeletonList, cx } from "../components/ui";
 import { useAuth } from "../lib/auth";
+import { isOpen } from "../lib/format";
 import { useDocumentTitle, useFetch } from "../lib/hooks";
 import type { Appointment } from "../lib/types";
 
 const TABS = [
-  {
-    key: "open",
-    label: "Upcoming & active",
-    match: (a: Appointment) => a.status === "pending" || a.status === "confirmed",
-  },
-  {
-    key: "past",
-    label: "Past",
-    match: (a: Appointment) => a.status === "completed" || a.status === "cancelled",
-  },
+  { key: "open", label: "Upcoming & active", match: (a: Appointment) => isOpen(a.status) },
+  { key: "past", label: "Past", match: (a: Appointment) => !isOpen(a.status) },
 ] as const;
 
 export default function Appointments() {
@@ -45,17 +38,12 @@ export default function Appointments() {
           )
         }
       />
-      <div
-        role="tablist"
-        aria-label="Consultation status"
-        className="mb-6 inline-flex rounded-md bg-sunken p-1"
-      >
+      <div role="group" aria-label="Show consultations" className="mb-6 inline-flex rounded-md bg-sunken p-1">
         {TABS.map((t) => (
           <button
             key={t.key}
-            role="tab"
             type="button"
-            aria-selected={tab === t.key}
+            aria-pressed={tab === t.key}
             onClick={() => setTab(t.key)}
             className={cx(
               "h-9 rounded-[7px] px-4 text-sm font-semibold transition-[background-color,box-shadow,color] duration-150",
@@ -67,34 +55,32 @@ export default function Appointments() {
           </button>
         ))}
       </div>
-      <div role="tabpanel">
-        {loading && <SkeletonList rows={3} />}
-        {error && <ErrorState message={error.message} onRetry={reload} />}
-        {data && items.length === 0 && (
-          <EmptyState
-            icon={<CalendarClock className="size-5" />}
-            title={tab === "open" ? "Nothing scheduled" : "No past consultations"}
-            body={
-              asDoctor
-                ? "Bookings from patients will show up here."
-                : "Book a specialist after a symptom check, or browse the directory."
-            }
-            action={
-              !asDoctor &&
-              tab === "open" && (
-                <ButtonLink to="/doctors" size="sm">
-                  Find a doctor
-                </ButtonLink>
-              )
-            }
-          />
-        )}
-        <ul className="space-y-3">
-          {items.map((a) => (
-            <AppointmentRow key={a.id} appointment={a} asDoctor={asDoctor} />
-          ))}
-        </ul>
-      </div>
+      {loading && <SkeletonList rows={3} />}
+      {error && <ErrorState message={error.message} onRetry={reload} />}
+      {data && items.length === 0 && (
+        <EmptyState
+          icon={<CalendarClock className="size-5" />}
+          title={tab === "open" ? "Nothing scheduled" : "No past consultations"}
+          body={
+            asDoctor
+              ? "Bookings from patients will show up here."
+              : "Book a specialist after a symptom check, or browse the directory."
+          }
+          action={
+            !asDoctor &&
+            tab === "open" && (
+              <ButtonLink to="/doctors" size="sm">
+                Find a doctor
+              </ButtonLink>
+            )
+          }
+        />
+      )}
+      <ul className="space-y-3">
+        {items.map((a) => (
+          <AppointmentRow key={a.id} appointment={a} asDoctor={asDoctor} />
+        ))}
+      </ul>
     </>
   );
 }

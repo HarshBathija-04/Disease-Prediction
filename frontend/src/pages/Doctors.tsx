@@ -1,7 +1,16 @@
-import { MapPin, Search, Stethoscope } from "lucide-react";
+import { MapPin, Stethoscope } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router";
-import { Avatar, EmptyState, ErrorState, PageHeader, Skeleton, Stars, cx } from "../components/ui";
+import {
+  Avatar,
+  EmptyState,
+  ErrorState,
+  PageHeader,
+  SearchInput,
+  Skeleton,
+  Stars,
+  cx,
+} from "../components/ui";
 import { useDocumentTitle, useFetch } from "../lib/hooks";
 import type { Doctor, SymptomCatalog } from "../lib/types";
 
@@ -47,21 +56,12 @@ export default function Doctors() {
         }
       />
       <div className="mb-6 space-y-4">
-        <div className="relative max-w-md">
-          <label htmlFor="doctor-search" className="sr-only">
-            Search doctors
-          </label>
-          <Search
-            className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted"
-            aria-hidden
-          />
-          <input
-            id="doctor-search"
-            type="search"
+        <div className="max-w-md">
+          <SearchInput
+            aria-label="Search doctors"
             placeholder="Search by name or specialty"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="h-11 w-full rounded-md border border-line-strong bg-surface pr-3 pl-9 focus:border-brand focus:ring-4 focus:ring-brand/15 focus:outline-none"
           />
         </div>
         <div

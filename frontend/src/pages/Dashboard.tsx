@@ -4,6 +4,7 @@ import { Disclaimer } from "../components/brand";
 import { AppointmentRow, PredictionRow } from "../components/lists";
 import { ButtonLink, Card, EmptyState, ErrorState, PageHeader, SkeletonList } from "../components/ui";
 import { useAuth } from "../lib/auth";
+import { isOpen } from "../lib/format";
 import { useDocumentTitle, useFetch } from "../lib/hooks";
 import type { Appointment, Prediction } from "../lib/types";
 
@@ -46,7 +47,7 @@ function Stat({ label, value }: { label: string; value: number | string }) {
 function PatientDashboard({ name }: { name: string }) {
   const predictions = useFetch<Prediction[]>("/api/predictions");
   const appointments = useFetch<Appointment[]>("/api/appointments");
-  const upcoming = appointments.data?.filter((a) => a.status === "pending" || a.status === "confirmed") ?? [];
+  const upcoming = appointments.data?.filter((a) => isOpen(a.status)) ?? [];
 
   return (
     <>
@@ -138,6 +139,12 @@ function DoctorDashboard({ name }: { name: string }) {
   const rating = rated.length
     ? (rated.reduce((sum, a) => sum + (a.rating ?? 0), 0) / rated.length).toFixed(1)
     : "—";
+  const stats = [
+    ["New requests", pending.length],
+    ["Active", confirmed.length],
+    ["Completed", completed.length],
+    ["Average rating", rating],
+  ] as const;
 
   return (
     <>
@@ -146,13 +153,14 @@ function DoctorDashboard({ name }: { name: string }) {
         subtitle="Review new requests and continue active consultations."
       />
       {appointments.error && (
-        <ErrorState message={appointments.error.message} onRetry={appointments.reload} />
+        <div className="mb-6">
+          <ErrorState message={appointments.error.message} onRetry={appointments.reload} />
+        </div>
       )}
       <div className="mb-10 grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <Stat label="New requests" value={appointments.loading ? "…" : pending.length} />
-        <Stat label="Active" value={appointments.loading ? "…" : confirmed.length} />
-        <Stat label="Completed" value={appointments.loading ? "…" : completed.length} />
-        <Stat label="Average rating" value={appointments.loading ? "…" : rating} />
+        {stats.map(([label, value]) => (
+          <Stat key={label} label={label} value={appointments.loading ? "…" : value} />
+        ))}
       </div>
       <div className="grid gap-10 lg:grid-cols-2">
         <Section title="Awaiting your confirmation">

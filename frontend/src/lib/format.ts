@@ -1,11 +1,20 @@
+import type { AppointmentStatus } from "./types";
+
 export function formatDate(value: string, options: Intl.DateTimeFormatOptions = { dateStyle: "medium" }) {
   // Plain dates (YYYY-MM-DD) are parsed as local dates so they do not shift a day across timezones.
   const date = /^\d{4}-\d{2}-\d{2}$/.test(value) ? new Date(`${value}T00:00:00`) : new Date(value);
   return new Intl.DateTimeFormat("en-IN", options).format(date);
 }
 
+/** Time of day, plus the date when it isn't today (for chat timestamps). */
 export function formatTime(value: string) {
-  return new Intl.DateTimeFormat("en-IN", { hour: "numeric", minute: "2-digit" }).format(new Date(value));
+  const date = new Date(value);
+  const today = date.toDateString() === new Date().toDateString();
+  return new Intl.DateTimeFormat("en-IN", {
+    hour: "numeric",
+    minute: "2-digit",
+    ...(today ? {} : { day: "numeric", month: "short" }),
+  }).format(date);
 }
 
 export function todayISO(offsetDays = 0) {
@@ -29,3 +38,6 @@ export function initials(name: string) {
     .map((part) => part[0]!.toUpperCase())
     .join("");
 }
+
+/** Pending and confirmed consultations are still open (chat allowed, can be cancelled). */
+export const isOpen = (status: AppointmentStatus) => status === "pending" || status === "confirmed";

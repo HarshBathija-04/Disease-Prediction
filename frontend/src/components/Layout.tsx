@@ -1,5 +1,5 @@
 import { Loader2, LogOut, Menu, X } from "lucide-react";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState } from "react";
 import { Link, Navigate, NavLink, Outlet, useLocation } from "react-router";
 import { Toaster } from "sonner";
 import { onSlowRequests } from "../lib/api";
@@ -176,7 +176,8 @@ export function Layout() {
   );
 }
 
-export function RequireAuth({ role, children }: { role?: Role; children: ReactNode }) {
+/** Route guard: renders the nested routes for signed-in users (optionally of one role). */
+export function RequireAuth({ role }: { role?: Role }) {
   const { user, ready } = useAuth();
   const location = useLocation();
   if (!ready)
@@ -187,5 +188,5 @@ export function RequireAuth({ role, children }: { role?: Role; children: ReactNo
     );
   if (!user) return <Navigate to={`/login?next=${encodeURIComponent(location.pathname)}`} replace />;
   if (role && user.role !== role) return <Navigate to="/app" replace />;
-  return children;
+  return <Outlet />;
 }

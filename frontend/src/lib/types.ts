@@ -94,3 +94,5 @@ export type ChatMessage = {
   is_mine: boolean;
   created: string;
 };
+
+export const GENDERS = ["Female", "Male", "Other"] as const;

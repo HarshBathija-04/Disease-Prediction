@@ -1,4 +1,4 @@
-import { AlertTriangle, Loader2, RotateCcw, Star } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Loader2, RotateCcw, Search, Star } from "lucide-react";
 import {
   useId,
   type ButtonHTMLAttributes,
@@ -107,30 +107,33 @@ export function PageHeader({
 }
 
 type FieldShell = { label: string; error?: string; hint?: string; className?: string };
+type ControlProps = { id: string; "aria-invalid"?: boolean; "aria-describedby"?: string };
 
-function FieldWrap({
-  id,
+/** Label + message around a control; hands the control its id and aria wiring. */
+function Field({
   label,
   error,
   hint,
   className,
   children,
-}: FieldShell & { id: string; children: ReactNode }) {
+}: FieldShell & { children: (control: ControlProps) => ReactNode }) {
+  const id = useId();
+  const message = error || hint;
   return (
     <div className={cx("flex flex-col gap-1.5", className)}>
       <label htmlFor={id} className="text-sm font-semibold text-ink">
         {label}
       </label>
-      {children}
-      {error ? (
-        <p id={`${id}-msg`} className="text-sm text-accent">
-          {error}
+      {children({
+        id,
+        "aria-invalid": Boolean(error) || undefined,
+        "aria-describedby": message ? `${id}-msg` : undefined,
+      })}
+      {message && (
+        <p id={`${id}-msg`} className={cx("text-sm", error ? "text-accent" : "text-muted")}>
+          {message}
         </p>
-      ) : hint ? (
-        <p id={`${id}-msg`} className="text-sm text-muted">
-          {hint}
-        </p>
-      ) : null}
+      )}
     </div>
   );
 }
@@ -139,6 +142,7 @@ const controlClass = (error?: string) =>
   cx(
     "w-full rounded-md border bg-surface px-3 text-[15px] text-ink placeholder:text-muted/70",
     "transition-[border-color,box-shadow] duration-150 focus:border-brand focus:ring-4 focus:ring-brand/15 focus:outline-none",
+    "disabled:cursor-not-allowed disabled:bg-sunken disabled:text-muted",
     error ? "border-accent" : "border-line-strong",
   );
 
@@ -149,17 +153,10 @@ export function Input({
   className,
   ...rest
 }: FieldShell & InputHTMLAttributes<HTMLInputElement>) {
-  const id = useId();
   return (
-    <FieldWrap id={id} label={label} error={error} hint={hint} className={className}>
-      <input
-        id={id}
-        className={cx(controlClass(error), "h-11")}
-        aria-invalid={Boolean(error) || undefined}
-        aria-describedby={error || hint ? `${id}-msg` : undefined}
-        {...rest}
-      />
-    </FieldWrap>
+    <Field label={label} error={error} hint={hint} className={className}>
+      {(control) => <input {...control} className={cx(controlClass(error), "h-11")} {...rest} />}
+    </Field>
   );
 }
 
@@ -168,22 +165,12 @@ export function Select({
   error,
   hint,
   className,
-  children,
   ...rest
 }: FieldShell & SelectHTMLAttributes<HTMLSelectElement>) {
-  const id = useId();
   return (
-    <FieldWrap id={id} label={label} error={error} hint={hint} className={className}>
-      <select
-        id={id}
-        className={cx(controlClass(error), "h-11 pr-8")}
-        aria-invalid={Boolean(error) || undefined}
-        aria-describedby={error || hint ? `${id}-msg` : undefined}
-        {...rest}
-      >
-        {children}
-      </select>
-    </FieldWrap>
+    <Field label={label} error={error} hint={hint} className={className}>
+      {(control) => <select {...control} className={cx(controlClass(error), "h-11 pr-8")} {...rest} />}
+    </Field>
   );
 }
 
@@ -194,17 +181,39 @@ export function Textarea({
   className,
   ...rest
 }: FieldShell & TextareaHTMLAttributes<HTMLTextAreaElement>) {
-  const id = useId();
   return (
-    <FieldWrap id={id} label={label} error={error} hint={hint} className={className}>
-      <textarea
-        id={id}
-        className={cx(controlClass(error), "min-h-24 py-2.5")}
-        aria-invalid={Boolean(error) || undefined}
-        aria-describedby={error || hint ? `${id}-msg` : undefined}
-        {...rest}
+    <Field label={label} error={error} hint={hint} className={className}>
+      {(control) => (
+        <textarea {...control} className={cx(controlClass(error), "min-h-24 py-2.5")} {...rest} />
+      )}
+    </Field>
+  );
+}
+
+export function SearchInput(props: InputHTMLAttributes<HTMLInputElement>) {
+  return (
+    <div className="relative">
+      <Search
+        className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted"
+        aria-hidden
       />
-    </FieldWrap>
+      <input
+        type="search"
+        className="h-11 w-full rounded-md border border-line-strong bg-surface pr-3 pl-9 text-[15px] text-ink transition-[border-color,box-shadow] duration-150 placeholder:text-muted/70 focus:border-brand focus:ring-4 focus:ring-brand/15 focus:outline-none"
+        {...props}
+      />
+    </div>
+  );
+}
+
+export function BackLink({ to, children }: { to: string; children: ReactNode }) {
+  return (
+    <Link
+      to={to}
+      className="mb-6 inline-flex items-center gap-1.5 rounded-md text-sm font-semibold text-muted transition-colors duration-150 hover:text-ink"
+    >
+      <ArrowLeft className="size-4" aria-hidden /> {children}
+    </Link>
   );
 }
 
@@ -291,10 +300,7 @@ export function Stars({ value, label }: { value: number; label?: string }) {
         <Star
           key={n}
           aria-hidden
-          className={cx(
-            "size-4",
-            n <= Math.round(value) ? "fill-[#d99a1e] text-[#d99a1e]" : "text-line-strong",
-          )}
+          className={cx("size-4", n <= Math.round(value) ? "fill-star text-star" : "text-line-strong")}
         />
       ))}
     </span>

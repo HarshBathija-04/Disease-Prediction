@@ -1,9 +1,10 @@
-import { ArrowLeft, Award, CalendarPlus, MapPin } from "lucide-react";
+import { Award, CalendarPlus, MapPin } from "lucide-react";
 import { useState, type FormEvent } from "react";
-import { Link, useNavigate, useParams, useSearchParams } from "react-router";
+import { useNavigate, useParams, useSearchParams } from "react-router";
 import { toast } from "sonner";
 import {
   Avatar,
+  BackLink,
   Button,
   ButtonLink,
   Card,
@@ -13,7 +14,7 @@ import {
   Skeleton,
   Stars,
 } from "../components/ui";
-import { api, ApiError } from "../lib/api";
+import { api, ApiError, messageOf } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { formatDate, todayISO } from "../lib/format";
 import { useDocumentTitle, useFetch } from "../lib/hooks";
@@ -45,8 +46,7 @@ function BookingForm({ doctor }: { doctor: Doctor }) {
       navigate(`/app/appointments/${appointment.id}`);
     } catch (err) {
       setError(err instanceof ApiError ? err : null);
-      if (!(err instanceof ApiError) || !err.details)
-        toast.error(err instanceof ApiError ? err.message : "Booking failed.");
+      if (!(err instanceof ApiError) || !err.details) toast.error(messageOf(err, "Booking failed."));
     } finally {
       setBusy(false);
     }
@@ -94,12 +94,9 @@ export default function DoctorDetail() {
 
   return (
     <div className="mx-auto max-w-5xl">
-      <Link
-        to={`/doctors${params.get("prediction") ? `?prediction=${params.get("prediction")}` : ""}`}
-        className="mb-6 inline-flex items-center gap-1.5 text-sm font-semibold text-muted hover:text-ink"
-      >
-        <ArrowLeft className="size-4" aria-hidden /> All doctors
-      </Link>
+      <BackLink to={`/doctors${params.get("prediction") ? `?prediction=${params.get("prediction")}` : ""}`}>
+        All doctors
+      </BackLink>
       {loading && <Skeleton className="h-72 rounded-lg" />}
       {error && (
         <ErrorState

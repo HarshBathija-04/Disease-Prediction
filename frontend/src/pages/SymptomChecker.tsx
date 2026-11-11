@@ -1,10 +1,10 @@
-import { Check, Search, X } from "lucide-react";
+import { Check, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
 import { Disclaimer } from "../components/brand";
-import { Button, Card, ErrorState, PageHeader, Skeleton, cx } from "../components/ui";
-import { api, ApiError } from "../lib/api";
+import { Button, Card, ErrorState, PageHeader, SearchInput, Skeleton, cx } from "../components/ui";
+import { api, messageOf } from "../lib/api";
 import { useDocumentTitle, useFetch } from "../lib/hooks";
 import type { Prediction, SymptomCatalog } from "../lib/types";
 
@@ -59,7 +59,7 @@ export default function SymptomChecker() {
       });
       navigate(`/app/predictions/${prediction.id}`);
     } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : "Prediction failed. Please try again.");
+      toast.error(messageOf(err, "Prediction failed. Please try again."));
       setBusy(false);
     }
   }
@@ -75,18 +75,12 @@ export default function SymptomChecker() {
           <label htmlFor="symptom-search" className="text-sm font-semibold">
             Search symptoms
           </label>
-          <div className="relative mt-2">
-            <Search
-              className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted"
-              aria-hidden
-            />
-            <input
+          <div className="mt-2">
+            <SearchInput
               id="symptom-search"
-              type="search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="e.g. fever, rash, back pain"
-              className="h-11 w-full rounded-md border border-line-strong bg-surface pr-3 pl-9 text-[15px] focus:border-brand focus:ring-4 focus:ring-brand/15 focus:outline-none"
             />
           </div>
 
@@ -223,6 +217,24 @@ export default function SymptomChecker() {
           </div>
         </aside>
       </div>
+
+      {/* On small screens the summary card sits below the long list, so keep the main action in reach. */}
+      {selected.length > 0 && (
+        <>
+          <div className="h-16 lg:hidden" aria-hidden />
+          <div className="fixed inset-x-0 bottom-0 z-30 animate-enter border-t border-line bg-surface/95 px-4 py-3 shadow-raised backdrop-blur lg:hidden">
+            <div className="mx-auto flex max-w-6xl items-center justify-between gap-3">
+              <p className="text-sm text-muted">
+                <span className="font-semibold text-ink tabular-nums">{selected.length}</span> of {MAX}{" "}
+                selected
+              </p>
+              <Button loading={busy} onClick={submit}>
+                {busy ? "Analysing…" : "Analyse symptoms"}
+              </Button>
+            </div>
+          </div>
+        </>
+      )}
     </>
   );
 }

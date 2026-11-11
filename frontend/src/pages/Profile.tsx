@@ -1,11 +1,11 @@
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { Button, Card, Input, PageHeader, Select, Textarea } from "../components/ui";
-import { api, ApiError } from "../lib/api";
+import { api, ApiError, messageOf } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { todayISO } from "../lib/format";
 import { useDocumentTitle } from "../lib/hooks";
-import type { User } from "../lib/types";
+import { GENDERS, type User } from "../lib/types";
 
 const FIELDS: Record<string, { label: string; type?: string; doctorOnly?: boolean }> = {
   name: { label: "Full name" },
@@ -28,7 +28,7 @@ function FeedbackForm() {
       setFeedback("");
       toast.success("Thanks! Your feedback was sent to the team.");
     } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : "Feedback not sent.");
+      toast.error(messageOf(err, "Feedback not sent."));
     } finally {
       setBusy(false);
     }
@@ -78,7 +78,7 @@ export default function Profile() {
       toast.success("Profile updated");
     } catch (err) {
       setError(err instanceof ApiError ? err : null);
-      toast.error(err instanceof ApiError ? err.message : "Could not save profile.");
+      toast.error(messageOf(err, "Could not save profile."));
     } finally {
       setBusy(false);
     }
@@ -108,10 +108,11 @@ export default function Profile() {
             label="Gender"
             value={form.gender ?? ""}
             onChange={(e) => setForm((s) => ({ ...s, gender: e.target.value }))}
+            error={error?.field("gender")}
           >
-            <option>Female</option>
-            <option>Male</option>
-            <option>Other</option>
+            {GENDERS.map((g) => (
+              <option key={g}>{g}</option>
+            ))}
           </Select>
           <div className="sm:col-span-2">
             <Button type="submit" loading={busy}>

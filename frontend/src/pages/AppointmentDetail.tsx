@@ -1,10 +1,11 @@
-import { ArrowLeft, ArrowRight, Lock, MessagesSquare, Send, Star } from "lucide-react";
+import { ArrowRight, Lock, MessagesSquare, Send, Star } from "lucide-react";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { Link, useParams } from "react-router";
 import { toast } from "sonner";
 import { ConfidenceMeter } from "../components/lists";
 import {
   Avatar,
+  BackLink,
   Button,
   Card,
   ErrorState,
@@ -14,9 +15,9 @@ import {
   Textarea,
   cx,
 } from "../components/ui";
-import { api, ApiError } from "../lib/api";
+import { api, messageOf } from "../lib/api";
 import { useAuth } from "../lib/auth";
-import { formatDate, formatTime } from "../lib/format";
+import { formatDate, formatTime, isOpen } from "../lib/format";
 import { useDocumentTitle, useFetch } from "../lib/hooks";
 import type { Appointment, AppointmentStatus, ChatMessage } from "../lib/types";
 
@@ -29,7 +30,7 @@ function Chat({ appointment }: { appointment: Appointment }) {
   const [sending, setSending] = useState(false);
   const listRef = useRef<HTMLOListElement>(null);
   const lastId = useRef(0);
-  const open = appointment.status === "pending" || appointment.status === "confirmed";
+  const open = isOpen(appointment.status);
 
   const poll = useCallback(async () => {
     try {
@@ -43,7 +44,7 @@ function Chat({ appointment }: { appointment: Appointment }) {
         return [...(current ?? []), ...fresh.filter((m) => !known.has(m.id))];
       });
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Couldn't load messages.");
+      setError(messageOf(err, "Couldn't load messages."));
     }
   }, [appointment.id]);
 
@@ -73,7 +74,7 @@ function Chat({ appointment }: { appointment: Appointment }) {
       setMessages((current) => [...(current ?? []), message]);
       setDraft("");
     } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : "Message not sent.");
+      toast.error(messageOf(err, "Message not sent."));
     } finally {
       setSending(false);
     }
@@ -184,7 +185,7 @@ function ReviewForm({ appointment, onDone }: { appointment: Appointment; onDone:
       );
       toast.success("Thanks for your review!");
     } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : "Review not saved.");
+      toast.error(messageOf(err, "Review not saved."));
     } finally {
       setBusy(false);
     }
@@ -215,7 +216,7 @@ function ReviewForm({ appointment, onDone }: { appointment: Appointment; onDone:
                 aria-hidden
                 className={cx(
                   "size-7 transition-colors duration-150",
-                  n <= rating ? "fill-[#d99a1e] text-[#d99a1e]" : "text-line-strong",
+                  n <= rating ? "fill-star text-star" : "text-line-strong",
                 )}
               />
             </label>
@@ -246,6 +247,8 @@ function DoctorActions({
   const [busy, setBusy] = useState<string | null>(null);
 
   async function update(status?: AppointmentStatus) {
+    const verb = appointment.status === "pending" ? "Decline" : "Cancel";
+    if (status === "cancelled" && !window.confirm(`${verb} this consultation? This can't be undone.`)) return;
     setBusy(status ?? "notes");
     try {
       const body: Record<string, string> = { doctor_notes: notes };
@@ -253,13 +256,13 @@ function DoctorActions({
       onDone(await api<Appointment>(`/api/appointments/${appointment.id}`, { method: "PATCH", body }));
       toast.success(status ? `Consultation ${status}` : "Notes saved");
     } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : "Update failed.");
+      toast.error(messageOf(err, "Update failed."));
     } finally {
       setBusy(null);
     }
   }
 
-  const open = appointment.status === "pending" || appointment.status === "confirmed";
+  const open = isOpen(appointment.status);
   return (
     <div className="space-y-4">
       <Textarea
@@ -313,7 +316,7 @@ export default function AppointmentDetail() {
   const [cancelling, setCancelling] = useState(false);
 
   async function cancel() {
-    if (!appointment || !window.confirm("Cancel this consultation request?")) return;
+    if (!appointment || !window.confirm("Cancel this consultation? This can't be undone.")) return;
     setCancelling(true);
     try {
       setData(
@@ -324,7 +327,7 @@ export default function AppointmentDetail() {
       );
       toast.success("Consultation cancelled");
     } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : "Could not cancel.");
+      toast.error(messageOf(err, "Could not cancel."));
     } finally {
       setCancelling(false);
     }
@@ -332,12 +335,7 @@ export default function AppointmentDetail() {
 
   return (
     <div className="mx-auto max-w-5xl">
-      <Link
-        to="/app/appointments"
-        className="mb-6 inline-flex items-center gap-1.5 text-sm font-semibold text-muted hover:text-ink"
-      >
-        <ArrowLeft className="size-4" aria-hidden /> Consultations
-      </Link>
+      <BackLink to="/app/appointments">Consultations</BackLink>
       {loading && <Skeleton className="h-96 rounded-lg" />}
       {error && (
         <ErrorState
@@ -410,7 +408,7 @@ export default function AppointmentDetail() {
                   <p className="text-sm text-pretty whitespace-pre-wrap text-muted">
                     {appointment.doctor_notes || "Your doctor hasn't added notes yet."}
                   </p>
-                  {(appointment.status === "pending" || appointment.status === "confirmed") && (
+                  {isOpen(appointment.status) && (
                     <Button variant="danger" size="sm" className="mt-4" loading={cancelling} onClick={cancel}>
                       Cancel consultation
                     </Button>

@@ -4,11 +4,11 @@ import { Link, Navigate, useNavigate, useSearchParams } from "react-router";
 import { toast } from "sonner";
 import { PulseLine } from "../components/brand";
 import { Button, Card, Input, Select, cx } from "../components/ui";
-import { ApiError } from "../lib/api";
+import { ApiError, messageOf } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { todayISO } from "../lib/format";
 import { useDocumentTitle, useFetch } from "../lib/hooks";
-import type { SymptomCatalog } from "../lib/types";
+import { GENDERS, type SymptomCatalog } from "../lib/types";
 
 // Public demo accounts created by `python manage.py seed_demo`.
 const DEMO = {
@@ -61,7 +61,7 @@ export function Login() {
       toast.success(`Welcome back, ${signedIn.profile?.name.split(" ")[0] ?? signedIn.username}`);
       navigate(safeNext(params.get("next")), { replace: true });
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Sign in failed.");
+      setError(messageOf(err, "Sign in failed."));
     } finally {
       setBusy(false);
     }
@@ -251,9 +251,9 @@ export function Register() {
           <Input label="Date of birth" type="date" max={todayISO(-1)} required {...bind("dob")} />
           <Select label="Gender" required {...bind("gender")}>
             <option value="">Select…</option>
-            <option>Female</option>
-            <option>Male</option>
-            <option>Other</option>
+            {GENDERS.map((g) => (
+              <option key={g}>{g}</option>
+            ))}
           </Select>
           <Input label="Mobile number" type="tel" autoComplete="tel" required {...bind("mobile_no")} />
           <Input label="City / address" autoComplete="address-level2" required {...bind("address")} />

@@ -143,3 +143,8 @@ export async function api<T>(path: string, options: Options = {}): Promise<T> {
   }
   return data as T;
 }
+
+/** The server's human message for a failed request, or `fallback` for anything unexpected. */
+export function messageOf(error: unknown, fallback: string) {
+  return error instanceof ApiError ? error.message : fallback;
+}

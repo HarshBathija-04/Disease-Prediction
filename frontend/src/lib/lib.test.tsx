@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { api, ApiError, tokens } from "./api";
-import { confidenceBand, formatDate, initials } from "./format";
+import { confidenceBand, formatDate, formatTime, initials } from "./format";
 import { Markdown, parseMarkdown } from "./markdown";
 
 describe("parseMarkdown", () => {
@@ -33,6 +33,10 @@ describe("format helpers", () => {
 
   it("formats plain dates without timezone drift", () => {
     expect(formatDate("2024-03-01", { day: "numeric", month: "short" })).toMatch(/1 Mar/);
+  });
+
+  it("adds the date to chat times from other days", () => {
+    expect(formatTime("2024-03-01T10:00:00Z")).toMatch(/Mar/);
   });
 
   it("builds initials", () => {

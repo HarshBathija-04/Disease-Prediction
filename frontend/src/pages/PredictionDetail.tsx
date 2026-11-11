@@ -1,11 +1,11 @@
-import { ArrowLeft, ArrowRight, NotebookPen, Sparkles } from "lucide-react";
+import { ArrowRight, NotebookPen, Sparkles } from "lucide-react";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
-import { Link, useParams } from "react-router";
+import { useParams } from "react-router";
 import { toast } from "sonner";
 import { Disclaimer } from "../components/brand";
 import { ConfidenceMeter } from "../components/lists";
-import { Button, ButtonLink, Card, ErrorState, Skeleton, Textarea } from "../components/ui";
-import { api, ApiError } from "../lib/api";
+import { BackLink, Button, ButtonLink, Card, ErrorState, Skeleton, Textarea } from "../components/ui";
+import { api, messageOf } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { formatDate } from "../lib/format";
 import { useDocumentTitle, useFetch } from "../lib/hooks";
@@ -25,7 +25,7 @@ function Explanation({ prediction }: { prediction: Prediction }) {
       });
       setText(data.ai_explanation);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Could not load the explanation.");
+      setError(messageOf(err, "Could not load the explanation."));
     }
   }, [prediction.id]);
 
@@ -80,7 +80,7 @@ function Notes({ prediction, canWrite }: { prediction: Prediction; canWrite: boo
       setDraft("");
       toast.success("Note added to the patient's report");
     } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : "Could not save the note.");
+      toast.error(messageOf(err, "Could not save the note."));
     } finally {
       setBusy(false);
     }
@@ -128,12 +128,9 @@ export default function PredictionDetail() {
 
   return (
     <div className="mx-auto max-w-4xl">
-      <Link
-        to={isDoctor ? "/app/predictions" : "/app"}
-        className="mb-6 inline-flex items-center gap-1.5 text-sm font-semibold text-muted hover:text-ink"
-      >
-        <ArrowLeft className="size-4" aria-hidden /> Back
-      </Link>
+      <BackLink to={isDoctor ? "/app/predictions" : "/app"}>
+        {isDoctor ? "Patient reports" : "Dashboard"}
+      </BackLink>
       {loading && (
         <div className="space-y-4" role="status" aria-label="Loading report">
           <Skeleton className="h-44 rounded-lg" />
