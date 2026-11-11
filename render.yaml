@@ -1,0 +1,30 @@
+# Render Blueprint. The shared PostgreSQL database is created once by hand (free plan allows one),
+# so there is no `databases:` block: set DATABASE_URL to its internal connection string.
+services:
+  - type: web
+    name: disease-prediction-api
+    runtime: python
+    plan: free
+    rootDir: backend
+    buildCommand: >-
+      pip install -r requirements.txt &&
+      python manage.py collectstatic --noinput &&
+      python manage.py migrate --noinput &&
+      python manage.py seed_demo
+    startCommand: gunicorn disease_prediction.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --preload --timeout 120
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.13"
+      - key: DB_SCHEMA
+        value: disease_prediction
+      - key: DATABASE_URL
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DEBUG
+        value: "false"
