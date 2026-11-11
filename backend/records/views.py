@@ -1,34 +1,67 @@
-from django.contrib import messages
-from django.contrib.auth.decorators import login_required
-from django.shortcuts import get_object_or_404, redirect, render
+from django.db.models import Q
+from rest_framework import mixins, status, viewsets
+from rest_framework.decorators import action
+from rest_framework.response import Response
 
-from hospital.models import Doctor
+from accounts.permissions import IsDoctor, IsPatient
+from disease_prediction.throttles import AIThrottle
+from main_app import ml
 
+from .ai import explain_prediction
 from .models import DoctorNote, PredictionRecord
+from .serializers import DoctorNoteSerializer, PredictionCreateSerializer, PredictionSerializer
 
 
-@login_required
-def prediction_list(request):
-    doctor_obj = Doctor.objects.filter(user=request.user).first()
-    if not doctor_obj:
-        return redirect("home")
-    predictions = PredictionRecord.objects.filter(doctor=doctor_obj).order_by("-created_at")
-    return render(request, "records/prediction_list.html", {"predictions": predictions})
+class PredictionViewSet(
+    mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.CreateModelMixin, viewsets.GenericViewSet
+):
+    serializer_class = PredictionSerializer
 
+    def get_permissions(self):
+        if self.action == "create":
+            return [IsPatient()]
+        if self.action == "notes":
+            return [IsDoctor()]
+        return super().get_permissions()
 
-@login_required
-def prediction_detail(request, record_id):
-    doctor_obj = Doctor.objects.filter(user=request.user).first()
-    if not doctor_obj:
-        return redirect("home")
-    record = get_object_or_404(PredictionRecord, id=record_id)
+    def get_queryset(self):
+        user = self.request.user
+        queryset = PredictionRecord.objects.select_related("patient").prefetch_related("doctor_notes__doctor")
+        if hasattr(user, "hospital_patient"):
+            return queryset.filter(patient=user.hospital_patient)
+        if hasattr(user, "hospital_doctor"):
+            doctor = user.hospital_doctor
+            return queryset.filter(Q(doctor=doctor) | Q(appointments__doctor=doctor)).distinct()
+        return queryset.none()
 
-    if request.method == "POST":
-        note = request.POST.get("note", "").strip()
-        if doctor_obj and note:
-            DoctorNote.objects.create(prediction=record, doctor=doctor_obj, note=note)
-            messages.success(request, "Doctor note saved.")
-        return redirect("prediction_detail", record_id=record.id)
+    def create(self, request, *args, **kwargs):
+        serializer = PredictionCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        symptoms = serializer.validated_data["symptoms"]
+        disease, confidence, specialist = ml.predict(symptoms)
+        record = PredictionRecord.objects.create(
+            patient=request.user.hospital_patient,
+            disease_name=disease,
+            confidence=confidence,
+            specialization=specialist,
+            symptoms=symptoms,
+        )
+        return Response(PredictionSerializer(record).data, status=status.HTTP_201_CREATED)
 
-    notes = record.doctor_notes.select_related("doctor").order_by("-created_at")
-    return render(request, "records/prediction_detail.html", {"record": record, "notes": notes})
+    @action(detail=True, methods=["post"], throttle_classes=[AIThrottle])
+    def explain(self, request, pk=None):
+        record = self.get_object()
+        if not record.ai_explanation:
+            record.ai_explanation = explain_prediction(record)
+            record.save(update_fields=["ai_explanation"])
+        return Response({"id": record.id, "ai_explanation": record.ai_explanation})
+
+    @action(detail=True, methods=["post"])
+    def notes(self, request, pk=None):
+        record = self.get_object()
+        serializer = DoctorNoteSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        note = DoctorNote.objects.create(
+            prediction=record, doctor=request.user.hospital_doctor, **serializer.validated_data
+        )
+        return Response(DoctorNoteSerializer(note).data, status=status.HTTP_201_CREATED)

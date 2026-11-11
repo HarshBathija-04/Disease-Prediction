@@ -1,3 +1,4 @@
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
 from hospital.models import Doctor, Patient
@@ -20,6 +21,10 @@ class Appointment(models.Model):
     appointment_date = models.DateField()
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_PENDING)
     doctor_notes = models.TextField(blank=True)
+    rating = models.PositiveSmallIntegerField(
+        null=True, blank=True, validators=[MinValueValidator(1), MaxValueValidator(5)]
+    )
+    review = models.TextField(blank=True)
     prediction = models.ForeignKey(
         "records.PredictionRecord",
         null=True,
@@ -29,6 +34,12 @@ class Appointment(models.Model):
     )
     created_at = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        ordering = ["-appointment_date", "-id"]
+
+    @property
+    def is_open(self):
+        return self.status in (self.STATUS_PENDING, self.STATUS_CONFIRMED)
+
     def __str__(self):
         return f"{self.patient.name} - {self.doctor.name} ({self.appointment_date})"
-

@@ -50,3 +50,10 @@ Desktop.ini
 # Logs
 logs/
 *.log
+
+# Project
+backend/staticfiles/
+frontend/dist/
+*.tsbuildinfo
+.env.*
+!.env.example

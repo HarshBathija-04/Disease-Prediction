@@ -11,8 +11,13 @@ class PredictionRecord(models.Model):
     disease_name = models.CharField(max_length=200)
     confidence = models.DecimalField(max_digits=5, decimal_places=2)
     symptoms = models.JSONField(default=list)
+    specialization = models.CharField(max_length=50, blank=True)
+    ai_explanation = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     legacy_diseaseinfo_id = models.IntegerField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
 
     def __str__(self):
         return f"{self.patient.name} - {self.disease_name} ({self.created_at.date()})"
@@ -24,6 +29,8 @@ class DoctorNote(models.Model):
     note = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        ordering = ["-created_at"]
+
     def __str__(self):
         return f"Note for {self.prediction_id} by {self.doctor.name}"
-

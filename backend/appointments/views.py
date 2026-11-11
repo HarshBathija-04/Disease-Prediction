@@ -1,86 +1,103 @@
-from datetime import date
+from rest_framework import mixins, status, viewsets
+from rest_framework.decorators import action
+from rest_framework.exceptions import PermissionDenied, ValidationError
+from rest_framework.response import Response
 
-from django.contrib import messages
-from django.contrib.auth.decorators import login_required
-from django.shortcuts import redirect, render
-
-from hospital.models import Doctor, Patient
-from main_app.models import doctor as LegacyDoctor
-from records.models import PredictionRecord
+from accounts.permissions import IsPatient
+from chats.models import Chat
+from chats.serializers import ChatSerializer
 
 from .models import Appointment
+from .serializers import (
+    AppointmentCreateSerializer,
+    AppointmentSerializer,
+    AppointmentUpdateSerializer,
+    ReviewSerializer,
+)
 
 
-def _get_or_sync_patient(user):
-    patient_obj = Patient.objects.filter(user=user).first()
-    if patient_obj:
-        return patient_obj
-    if hasattr(user, "patient"):
-        legacy = user.patient
-        patient_obj, _ = Patient.objects.get_or_create(
-            user=user,
-            defaults={
-                "name": legacy.name,
-                "dob": legacy.dob,
-                "address": legacy.address,
-                "mobile_no": legacy.mobile_no,
-                "gender": legacy.gender,
-            },
+class AppointmentViewSet(
+    mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.CreateModelMixin, viewsets.GenericViewSet
+):
+    serializer_class = AppointmentSerializer
+
+    def get_permissions(self):
+        if self.action in ("create", "review"):
+            return [IsPatient()]
+        return super().get_permissions()
+
+    def get_queryset(self):
+        user = self.request.user
+        queryset = Appointment.objects.select_related("doctor", "patient", "prediction")
+        if hasattr(user, "hospital_patient"):
+            return queryset.filter(patient=user.hospital_patient)
+        if hasattr(user, "hospital_doctor"):
+            return queryset.filter(doctor=user.hospital_doctor)
+        return queryset.none()
+
+    def create(self, request, *args, **kwargs):
+        serializer = AppointmentCreateSerializer(data=request.data, context={"request": request})
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        prediction = data.get("prediction_id")
+        appointment = Appointment.objects.create(
+            patient=request.user.hospital_patient,
+            doctor=data["doctor"],
+            appointment_date=data["appointment_date"],
+            prediction=prediction,
         )
-        return patient_obj
-    return None
+        if prediction and prediction.doctor_id is None:
+            prediction.doctor = data["doctor"]
+            prediction.save(update_fields=["doctor"])
+        return Response(AppointmentSerializer(appointment).data, status=status.HTTP_201_CREATED)
 
+    def partial_update(self, request, *args, **kwargs):
+        appointment = self.get_object()
+        serializer = AppointmentUpdateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        is_doctor = appointment.doctor.user_id == request.user.id
+        new_status = data.get("status")
 
-def _sync_doctors():
-    for legacy in LegacyDoctor.objects.select_related("user").all():
-        Doctor.objects.get_or_create(
-            user=legacy.user,
-            defaults={
-                "name": legacy.name,
-                "dob": legacy.dob,
-                "address": legacy.address,
-                "mobile_no": legacy.mobile_no,
-                "gender": legacy.gender,
-                "registration_no": legacy.registration_no,
-                "year_of_registration": legacy.year_of_registration,
-                "qualification": legacy.qualification,
-                "state_medical_council": legacy.State_Medical_Council,
-                "specialization": legacy.specialization,
-            },
-        )
+        if not is_doctor and (set(data) - {"status"} or new_status != Appointment.STATUS_CANCELLED):
+            raise PermissionDenied("Patients can only cancel their appointments.")
+        if new_status and not appointment.is_open:
+            raise ValidationError({"status": f"This appointment is already {appointment.status}."})
+        if new_status == Appointment.STATUS_COMPLETED and appointment.status != Appointment.STATUS_CONFIRMED:
+            raise ValidationError({"status": "Confirm the appointment before completing it."})
 
+        for field, value in data.items():
+            setattr(appointment, field, value)
+        appointment.save(update_fields=list(data) or None)
+        return Response(AppointmentSerializer(appointment).data)
 
-@login_required
-def book_appointment(request):
-    if request.method == "GET":
-        _sync_doctors()
-        doctors = Doctor.objects.order_by("name")
-        patient_obj = _get_or_sync_patient(request.user)
-        predictions = PredictionRecord.objects.filter(patient=patient_obj).order_by("-created_at") if patient_obj else []
-        return render(
-            request,
-            "appointments/book_appointment.html",
-            {"doctors": doctors, "predictions": predictions, "today": date.today()},
-        )
+    @action(detail=True, methods=["post"])
+    def review(self, request, pk=None):
+        appointment = self.get_object()
+        if appointment.status != Appointment.STATUS_COMPLETED:
+            raise ValidationError({"rating": "You can review a consultation once it is completed."})
+        if appointment.rating is not None:
+            raise ValidationError({"rating": "You have already reviewed this consultation."})
+        serializer = ReviewSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        appointment.rating = serializer.validated_data["rating"]
+        appointment.review = serializer.validated_data["review"]
+        appointment.save(update_fields=["rating", "review"])
+        return Response(AppointmentSerializer(appointment).data)
 
-    doctor_id = request.POST.get("doctor_id")
-    appointment_date = request.POST.get("appointment_date")
-    prediction_id = request.POST.get("prediction_id")
+    @action(detail=True, methods=["get", "post"])
+    def messages(self, request, pk=None):
+        appointment = self.get_object()
+        if request.method == "POST":
+            if not appointment.is_open:
+                raise ValidationError({"message": "This consultation is closed."})
+            serializer = ChatSerializer(data=request.data, context={"request": request})
+            serializer.is_valid(raise_exception=True)
+            chat = serializer.save(appointment=appointment, sender=request.user)
+            return Response(ChatSerializer(chat, context={"request": request}).data, status=status.HTTP_201_CREATED)
 
-    patient_obj = _get_or_sync_patient(request.user)
-    doctor_obj = Doctor.objects.filter(id=doctor_id).first()
-    prediction_obj = PredictionRecord.objects.filter(id=prediction_id).first() if prediction_id else None
-
-    if not patient_obj or not doctor_obj or not appointment_date:
-        messages.error(request, "Please provide all required appointment details.")
-        return redirect("book_appointment")
-
-    Appointment.objects.create(
-        patient=patient_obj,
-        doctor=doctor_obj,
-        appointment_date=appointment_date,
-        prediction=prediction_obj,
-        status=Appointment.STATUS_PENDING,
-    )
-    messages.success(request, "Appointment booked successfully.")
-    return redirect("hospital_patient_profile")
+        chats = Chat.objects.filter(appointment=appointment).select_related("sender")
+        after = request.query_params.get("after", "")
+        if after.isdigit():
+            chats = chats.filter(id__gt=int(after))
+        return Response(ChatSerializer(chats[:500], many=True, context={"request": request}).data)

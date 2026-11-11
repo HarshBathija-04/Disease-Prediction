@@ -1,19 +1,22 @@
-from django.db import models
 from django.contrib.auth.models import User
-from main_app.models import consultation
+from django.db import models
 
-# Create your models here.
+from appointments.models import Appointment
+
 
 class Chat(models.Model):
+    """A consultation message between the patient and doctor of an appointment."""
+
     created = models.DateTimeField(auto_now_add=True)
-    consultation_id =  models.ForeignKey(consultation, on_delete=models.CASCADE)
+    appointment = models.ForeignKey(Appointment, on_delete=models.CASCADE, related_name="messages")
     sender = models.ForeignKey(User, on_delete=models.CASCADE)
     message = models.TextField()
 
-    def __unicode__(self):
-        return self.message
+    class Meta:
+        ordering = ["created", "id"]
 
-
+    def __str__(self):
+        return self.message[:50]
 
 
 class Feedback(models.Model):
@@ -21,5 +24,5 @@ class Feedback(models.Model):
     sender = models.ForeignKey(User, on_delete=models.CASCADE)
     feedback = models.TextField()
 
-    def __unicode__(self):
-        return self.feedback
+    def __str__(self):
+        return self.feedback[:50]

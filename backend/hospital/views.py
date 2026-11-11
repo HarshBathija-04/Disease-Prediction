@@ -1,105 +1,48 @@
-from django.contrib.auth.decorators import login_required
-from django.contrib.auth.models import User
-from django.shortcuts import get_object_or_404, redirect, render
+from django.db.models import Avg, Count, F, Q
+from rest_framework import viewsets
+from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
 
 from appointments.models import Appointment
-from records.models import PredictionRecord
 
-from .models import Doctor, Patient, UserProfile
+from .models import Doctor
+from .serializers import DoctorPublicSerializer
+
+REVIEWED = Q(appointments__rating__isnull=False)
 
 
-def _sync_hospital_patient(user):
-    if hasattr(user, "patient"):
-        legacy = user.patient
-        patient_obj, _ = Patient.objects.get_or_create(
-            user=user,
-            defaults={
-                "name": legacy.name,
-                "dob": legacy.dob,
-                "address": legacy.address,
-                "mobile_no": legacy.mobile_no,
-                "gender": legacy.gender,
-            },
+class DoctorViewSet(viewsets.ReadOnlyModelViewSet):
+    serializer_class = DoctorPublicSerializer
+    permission_classes = [AllowAny]
+
+    def get_queryset(self):
+        queryset = Doctor.objects.annotate(
+            avg_rating=Avg("appointments__rating"), review_count=Count("appointments", filter=REVIEWED)
+        ).order_by(F("avg_rating").desc(nulls_last=True), "name")
+        specialization = self.request.query_params.get("specialization", "").strip()
+        search = self.request.query_params.get("search", "").strip()[:50]
+        if specialization:
+            queryset = queryset.filter(specialization__iexact=specialization)
+        if search:
+            queryset = queryset.filter(Q(name__icontains=search) | Q(specialization__icontains=search))
+        return queryset
+
+    def retrieve(self, request, *args, **kwargs):
+        doctor = self.get_object()
+        reviews = (
+            Appointment.objects.filter(doctor=doctor, rating__isnull=False)
+            .select_related("patient")
+            .order_by("-appointment_date")[:10]
         )
-        UserProfile.objects.get_or_create(user=user, defaults={"role": UserProfile.ROLE_PATIENT})
-        return patient_obj
-    return None
-
-
-def _sync_hospital_doctor(user):
-    if hasattr(user, "doctor"):
-        legacy = user.doctor
-        doctor_obj, _ = Doctor.objects.get_or_create(
-            user=user,
-            defaults={
-                "name": legacy.name,
-                "dob": legacy.dob,
-                "address": legacy.address,
-                "mobile_no": legacy.mobile_no,
-                "gender": legacy.gender,
-                "registration_no": legacy.registration_no,
-                "year_of_registration": legacy.year_of_registration,
-                "qualification": legacy.qualification,
-                "state_medical_council": legacy.State_Medical_Council,
-                "specialization": legacy.specialization,
-            },
-        )
-        UserProfile.objects.get_or_create(user=user, defaults={"role": UserProfile.ROLE_DOCTOR})
-        return doctor_obj
-    return None
-
-
-@login_required
-def patient_profile(request):
-    patient_obj = _sync_hospital_patient(request.user)
-    if not patient_obj:
-        return redirect("home")
-    history = PredictionRecord.objects.filter(patient=patient_obj).order_by("-created_at")
-    appointments = Appointment.objects.filter(patient=patient_obj).order_by("-appointment_date")
-    return render(
-        request,
-        "hospital/patient_profile.html",
-        {"patient": patient_obj, "history": history, "appointments": appointments},
-    )
-
-
-@login_required
-def doctor_dashboard(request):
-    doctor_obj = _sync_hospital_doctor(request.user)
-    if not doctor_obj:
-        return redirect("home")
-    appointments = Appointment.objects.filter(doctor=doctor_obj).select_related("patient", "prediction")
-    predictions = (
-        PredictionRecord.objects.filter(doctor=doctor_obj)
-        .select_related("patient__user")
-        .order_by("-created_at")
-    )
-    return render(
-        request,
-        "hospital/doctor_dashboard.html",
-        {"doctor": doctor_obj, "appointments": appointments, "predictions": predictions},
-    )
-
-
-@login_required
-def doctor_patients(request):
-    doctor_obj = _sync_hospital_doctor(request.user)
-    if not doctor_obj:
-        return redirect("home")
-    patients = (
-        Patient.objects.filter(appointments__doctor=doctor_obj)
-        .select_related("user")
-        .distinct()
-        .order_by("name")
-    )
-    return render(request, "hospital/doctor_patients.html", {"doctor": doctor_obj, "patients": patients})
-
-
-@login_required
-def patient_history(request):
-    user = get_object_or_404(User, username=request.session.get("patientusername", request.user.username))
-    patient_obj = _sync_hospital_patient(user)
-    if not patient_obj:
-        return redirect("home")
-    history = PredictionRecord.objects.filter(patient=patient_obj).order_by("-created_at")
-    return render(request, "hospital/patient_history.html", {"history": history, "patient": patient_obj})
+        data = self.get_serializer(doctor).data
+        data["reviews"] = [
+            {
+                "id": a.id,
+                "rating": a.rating,
+                "review": a.review,
+                "patient": a.patient.name.split()[0],
+                "date": a.appointment_date,
+            }
+            for a in reviews
+        ]
+        return Response(data)

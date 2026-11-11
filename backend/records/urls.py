@@ -1,9 +1,7 @@
-from django.urls import path
+from rest_framework.routers import SimpleRouter
 
-from . import views
+from .views import PredictionViewSet
 
-urlpatterns = [
-    path("", views.prediction_list, name="prediction_list"),
-    path("<int:record_id>", views.prediction_detail, name="prediction_detail"),
-]
-
+router = SimpleRouter(trailing_slash=False)
+router.register("predictions", PredictionViewSet, basename="prediction")
+urlpatterns = router.urls

@@ -1,8 +1,7 @@
-from django.urls import path
+from rest_framework.routers import SimpleRouter
 
-from . import views
+from .views import AppointmentViewSet
 
-urlpatterns = [
-    path("book", views.book_appointment, name="book_appointment"),
-]
-
+router = SimpleRouter(trailing_slash=False)
+router.register("appointments", AppointmentViewSet, basename="appointment")
+urlpatterns = router.urls
