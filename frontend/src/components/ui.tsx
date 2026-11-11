@@ -140,7 +140,7 @@ function Field({
 
 const controlClass = (error?: string) =>
   cx(
-    "w-full rounded-md border bg-surface px-3 text-[15px] text-ink placeholder:text-muted/70",
+    "w-full rounded-md border bg-surface px-3 text-[15px] text-ink placeholder:text-muted",
     "transition-[border-color,box-shadow] duration-150 focus:border-brand focus:ring-4 focus:ring-brand/15 focus:outline-none",
     "disabled:cursor-not-allowed disabled:bg-sunken disabled:text-muted",
     error ? "border-accent" : "border-line-strong",
@@ -199,7 +199,7 @@ export function SearchInput(props: InputHTMLAttributes<HTMLInputElement>) {
       />
       <input
         type="search"
-        className="h-11 w-full rounded-md border border-line-strong bg-surface pr-3 pl-9 text-[15px] text-ink transition-[border-color,box-shadow] duration-150 placeholder:text-muted/70 focus:border-brand focus:ring-4 focus:ring-brand/15 focus:outline-none"
+        className="h-11 w-full rounded-md border border-line-strong bg-surface pr-3 pl-9 text-[15px] text-ink transition-[border-color,box-shadow] duration-150 placeholder:text-muted focus:border-brand focus:ring-4 focus:ring-brand/15 focus:outline-none"
         {...props}
       />
     </div>

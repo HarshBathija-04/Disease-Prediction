@@ -54,6 +54,12 @@ function Header() {
     setPath(location.pathname);
     setOpen(false);
   }
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open]);
   const links = navFor(user?.role);
 
   const linkClass = ({ isActive }: { isActive: boolean }) =>

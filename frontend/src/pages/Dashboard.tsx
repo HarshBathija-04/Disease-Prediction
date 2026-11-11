@@ -18,7 +18,7 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <section aria-label={title}>
+    <section aria-label={title} className="min-w-0">
       <div className="mb-4 flex items-center justify-between gap-4">
         <h2 className="text-lg font-semibold">{title}</h2>
         {link && (
@@ -55,7 +55,8 @@ function PatientDashboard({ name }: { name: string }) {
         title={`Hello, ${name.split(" ")[0]}`}
         subtitle="Here's your health activity at a glance."
       />
-      <Card className="mb-10 flex flex-col gap-5 overflow-hidden bg-brand p-6 text-white sm:flex-row sm:items-center sm:p-8">
+      {/* Not a <Card>: its bg-surface would win over bg-brand (classes are not merged). */}
+      <section className="mb-10 flex flex-col gap-5 rounded-lg bg-brand p-6 text-white shadow-card sm:flex-row sm:items-center sm:p-8">
         <div className="flex-1">
           <h2 className="font-display text-2xl font-semibold">Feeling unwell?</h2>
           <p className="mt-1 max-w-lg text-pretty text-white/80">
@@ -71,7 +72,7 @@ function PatientDashboard({ name }: { name: string }) {
         >
           Check symptoms <ArrowRight className="size-4" aria-hidden />
         </ButtonLink>
-      </Card>
+      </section>
 
       <div className="grid gap-10 lg:grid-cols-2">
         <Section title="Upcoming consultations" link={{ to: "/app/appointments", label: "All" }}>

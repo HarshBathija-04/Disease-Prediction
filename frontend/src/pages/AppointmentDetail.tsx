@@ -88,7 +88,7 @@ function Chat({ appointment }: { appointment: Appointment }) {
       </div>
       <ol
         ref={listRef}
-        className="flex h-[24rem] flex-col gap-3 overflow-y-auto bg-paper/60 px-4 py-5 sm:px-5"
+        className="flex h-[20rem] flex-col sm:h-[24rem] gap-3 overflow-y-auto bg-paper/60 px-4 py-5 sm:px-5"
         aria-live="polite"
         aria-label="Messages"
       >
@@ -362,9 +362,9 @@ export default function AppointmentDetail() {
                       : `${appointment.doctor.specialization} · ${appointment.doctor.qualification}`}
                   </p>
                 </div>
-                <div className="text-right">
+                <div className="flex w-full items-center gap-3 sm:block sm:w-auto sm:text-right">
                   <StatusBadge status={appointment.status} />
-                  <p className="mt-1 text-sm text-muted">
+                  <p className="text-sm text-muted sm:mt-1">
                     {formatDate(appointment.appointment_date, { dateStyle: "full" })}
                   </p>
                 </div>
