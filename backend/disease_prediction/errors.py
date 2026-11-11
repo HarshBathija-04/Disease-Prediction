@@ -20,8 +20,7 @@ def exception_handler(exc, context):
     response = drf_exception_handler(exc, context)
     if response is None:
         logger.exception("Unhandled API error", exc_info=exc)
-        response = JsonResponse(error_body("server_error", "Something went wrong. Please try again."), status=500)
-        return response
+        return JsonResponse(error_body("server_error", "Something went wrong. Please try again."), status=500)
 
     if isinstance(exc, exceptions.ValidationError):
         response.data = error_body("validation_error", "Some fields are invalid.", response.data)

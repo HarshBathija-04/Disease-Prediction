@@ -1,3 +1,4 @@
+from django.db import transaction
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied, ValidationError
@@ -35,6 +36,7 @@ class AppointmentViewSet(
             return queryset.filter(doctor=user.hospital_doctor)
         return queryset.none()
 
+    @transaction.atomic
     def create(self, request, *args, **kwargs):
         serializer = AppointmentCreateSerializer(data=request.data, context={"request": request})
         serializer.is_valid(raise_exception=True)

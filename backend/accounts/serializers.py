@@ -17,13 +17,12 @@ from hospital.serializers import (
 )
 from main_app.ml import SPECIALIZATIONS
 
-from .permissions import role_of
-
 username_validator = RegexValidator(r"^[a-zA-Z0-9_.]{3,30}$", "Use 3-30 letters, numbers, dots or underscores.")
 
 
 def user_payload(user):
-    role = role_of(user)
+    account = getattr(user, "user_profile", None)
+    role = account.role if account else (UserProfile.ROLE_ADMIN if user.is_superuser else None)
     profile = None
     if hasattr(user, "hospital_patient"):
         profile = PatientSerializer(user.hospital_patient).data

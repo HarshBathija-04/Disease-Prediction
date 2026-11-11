@@ -32,10 +32,7 @@ class Patient(models.Model):
     @property
     def age(self):
         today = date.today()
-        years = today.year - self.dob.year
-        if (today.month, today.day) < (self.dob.month, self.dob.day):
-            years -= 1
-        return years
+        return today.year - self.dob.year - ((today.month, today.day) < (self.dob.month, self.dob.day))
 
     def __str__(self):
         return self.name
